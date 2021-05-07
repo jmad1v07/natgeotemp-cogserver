@@ -29,7 +29,8 @@ class UserAOI(BaseModel):
 app = FastAPI()
 
 # global variable to store container and blob names for user's session
-instance_names = {}
+container_names = []
+blob_names = []
 
 # set up a TiTiler endpoint to generate web map tiles from COGs
 cog = TilerFactory()
@@ -60,9 +61,16 @@ def predict_temperature_chance(user_aoi: UserAOI):
 
     # store temporary container and blob for user's session 
     # store container and blob names in global variable for clean up on shutdown
-    global instance_names 
-    instance_names["container_name"] = from_user["container_nm"]
-    instance_names["blob_name"] = from_user["blob_nm"]
+    global container_names
+    if from_user["container_nm"] not in container_names:
+        container_names.append(from_user["container_nm"]) 
+
+    global blob_names
+    if from_user["blob_nm"] not in blob_names:
+        blob_names.append(from_user["blob_nm"])
+
+    tmp_container_name = from_user["container_nm"]
+    tmp_blob_name = from_user["blob_nm"]
 
     # read raster data clipped to user's aoi
     with COGReader(cog_path) as cog:
@@ -113,19 +121,26 @@ def predict_temperature_chance(user_aoi: UserAOI):
                 colormap=cm,
             )
         # Create the BlobServiceClient object which will be used to create a container client
-        # blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+        blob_service_client = BlobServiceClient.from_connection_string(connect_str)
 
-        # # Create the container
-        # container_client = blob_service_client.create_container(tmp_container_name, public_access="blob")
-        # # Create a blob client using the local file name as the name for the blob
-        # blob_client = blob_service_client.get_blob_client(container=tmp_container_name, blob=tmp_blob_name)
+        # Create the container
+        container_client = blob_service_client.create_container(tmp_container_name, public_access="blob")
+
+        # Create a blob client using the local file name as the name for the blob
+        blob_client = blob_service_client.get_blob_client(container=tmp_container_name, blob=tmp_blob_name)
         
-        # # Upload the created file
-        # with open(tmp_cog.name, "rb") as data:
-        #     blob_client.upload_blob(data)
+        # Upload the created file
+        with open(tmp_cog.name, "rb") as data:
+            blob_client.upload_blob(data)
 
     # change response string to url of COG with temperature predictions
     response = {}
+    cog_prediction_url = "https://webmapbaselayer.blob.core.windows.net/" + tmp_container_name + "/" + tmp_blob_name
     response["min"] = pred_min
     response["max"] = pred_max
+    response["pred_url"] = cog_prediction_url
     return(response)  
+
+@app.on_event("shutdown")
+def shutdown_event():
+    print("shutting down")
