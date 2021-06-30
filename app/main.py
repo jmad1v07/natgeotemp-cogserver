@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 import numpy as np
+from scipy.ndimage.filters import convolve
 
 from titiler.core.factory import TilerFactory
 from titiler.core.errors import DEFAULT_STATUS_CODES, add_exception_handlers
