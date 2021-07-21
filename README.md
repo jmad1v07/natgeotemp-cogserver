@@ -19,9 +19,20 @@ pip freeze > requirements.txt
 Build the app image from the Dockerfile:
 
 ```
-docker build -t tree-heat-cogserver .
+docker build -t cogserver .
 ```
 
 ## Deploy to Azure App Service
 
-Upload image to Azure Container Registry.
+Set up Azure Container Registry. One time!
+
+```
+az acr create --name myregistry --resource-group mygroup --sku standard --admin-enabled true
+```
+
+Upload image to Azure Container Registry. Repeated builds will update the image in Azure Container Registry. The image with tag `latest` will be deployed on app service. 
+
+```
+az acr build --registry <container_registry_name> --image cogserver .
+```
+
