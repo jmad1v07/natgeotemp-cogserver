@@ -3,6 +3,7 @@ import os
 import tempfile
 import numpy as np
 from scipy.ndimage.filters import convolve
+import temp_predictions as tp
 
 from titiler.core.factory import TilerFactory
 from titiler.core.errors import DEFAULT_STATUS_CODES, add_exception_handlers
@@ -82,10 +83,21 @@ def predict_temperature_change(user_aoi: UserAOI):
         # we use the feature to define the bounds and the mask
         img = cog.feature(feature)
 
-    # do temperature prediction here
-    img1 = ((img.data / 255) + 30)
+    # rescale forest cover data to 0 and 1
+    img.data = img.data.astype(float) / 255
+    img_data = img.data
+    img_data = np.squeeze(img_data, 0)
+    
+    # get user specified forest loss descriptors
+    loss_amount = from_user["deforestation_amount"]
+    loss_type = from_user["deforestation_type"]
 
-    img.data = img1  
+    # predict warming based on local and non-local loss
+    pred = tp.predict_temp(img_data, 1000, 1000, loss_amount, loss_type)
+    # add axis to match rasterio array format
+    pred = np.expand_dims(pred, 0)
+    # replate rio-tiler ImageData data attribute with predicted warming
+    img.data = pred
 
     # get prediction min and max values to rescale data and send to client for rendering legend
     pred_min = np.min(img.data)

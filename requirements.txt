@@ -45,6 +45,7 @@ rio-color==1.0.2
 rio-mucho==1.0.0
 rio-tiler==2.0.8
 s3transfer==0.4.2
+scipy==1.6.3
 six==1.16.0
 snuggs==1.4.7
 starlette==0.13.6
