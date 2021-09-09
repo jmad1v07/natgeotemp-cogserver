@@ -104,8 +104,8 @@ def predict_temperature_change(user_aoi: UserAOI):
     pred_max = np.max(img.data)
 
     # Rescale the data linearly from 30 - 31 to 0-255 and convert to byte format
-    img = img.post_process(in_range=(pred_min, pred_max))
-
+    img = img.post_process(in_range=((pred_min, pred_max),))
+    print(img)
     # Get Colormap
     cm = cmap.get("ylorrd")
 
